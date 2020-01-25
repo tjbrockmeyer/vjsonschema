@@ -1,0 +1,9 @@
+{
+  "type": "object",
+  "required": ["this"],
+  "additionalProperties": false,
+  "properties": {
+    "this": {"type": "number"},
+    "next": {"$ref": "{Circular}"}
+  }
+}

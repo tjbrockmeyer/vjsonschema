@@ -1,0 +1,34 @@
+{
+  "type": "object",
+  "required": [
+    "abc",
+    "123",
+    "lmnop"
+  ],
+  "properties": {
+    "abc": {
+      "$ref": "{F2Abc}"
+    },
+    "123": {
+      "$ref": "{F1OneTwoThree}"
+    },
+    "lmnop": {
+      "$ref": "{F2ElmEnnoPi}"
+    }
+  },
+  "definitions": {
+    "OneTwoThree": {
+      "type": "object",
+      "properties": {
+        "oneTwoThree": {
+          "type": "integer",
+          "enum": [
+            1,
+            2,
+            3
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "type": "object",
+  "required": ["jkl"],
+  "properties": {
+    "jkl": {"type": "string"}
+  },
+  "definitions": {
+    "Abc": {
+      "type": "object",
+      "required": ["123"],
+      "properties": {
+        "123": {"type": "integer"}
+      }
+    }
+  }
+}

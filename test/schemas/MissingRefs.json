@@ -1,0 +1,13 @@
+{
+  "type": "object",
+  "properties": {
+    "item1": {"$ref": "{MissingRefsAbc}"}
+  },
+  "definitions": {
+    "Abc": {
+      "properties": {
+        "123": {"$ref": "{MissingRefs123}"}
+      }
+    }
+  }
+}

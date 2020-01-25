@@ -1,0 +1,12 @@
+{
+  "type": "object",
+  "properties": {
+    "abc": {"$ref": "{HasRefsOne}"}
+  },
+  "definitions": {
+    "One": {
+      "type": "string",
+      "enum": ["x", "y", "z"]
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "type": "object",
+  "required": [
+    "123",
+    "f1"
+  ],
+  "properties": {
+    "123": {
+      "$ref": "{F1OneTwoThree}"
+    },
+    "f1": {
+      "$ref": "{F1}"
+    }
+  },
+  "definitions": {
+    "Abc": {
+      "type": "string",
+      "enum": [
+        "a",
+        "b",
+        "c"
+      ]
+    },
+    "ElmEnnoPi": {
+      "type": "string",
+      "enum": [
+        "l",
+        "m",
+        "n",
+        "o",
+        "p"
+      ]
+    }
+  }
+}
