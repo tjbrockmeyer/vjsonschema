@@ -25,15 +25,34 @@ func SchemaRefReplace(schema []byte, replaceFunc func(ref string) string) []byte
 	})
 }
 
+// An object that is capable of building a Validator from schemas.
 type Builder interface {
+	// Adds an entire directory (non-recursive) as schemas.
+	// Every .json file in 'dir' will be opened and added to the schema map as follows:
+	// 		For the main schema: prefix+fileName
+	// 		For the definitions: prefix+fileName+definitionName
 	AddDir(prefix, dir string) error
+
+	// Opens the file and adds it to the schema map as follows:
+	// 		For the main schema: prefix+fileName
+	// 		For the definitions: prefix+fileName+definitionName
 	AddFile(prefix, filePath string) error
+
+	// Adds a schema to the schema map as 'name'
+	// 		For the main schema: name
+	// 		For the definitions: name+definitionName
 	AddSchema(name string, schema []byte) error
+
+	// Return a mapping of name to copies of the schemas.
 	GetSchemas() map[string][]byte
+
+	// Compile all added schemas into a validator for any of the prefixs.
 	Compile() (Validator, error)
 }
 
+// An object that is capable of validating json against schemas.
 type Validator interface {
+	// Validate that a particular json blob conforms to the given schema.
 	Validate(schemaName string, instance []byte) (*gojsonschema.Result, error)
 }
 
@@ -46,16 +65,13 @@ type registeredSchema struct {
 	requiredReferences map[string]struct{}
 }
 
+// Get a new bulider for creating a validator.
 func NewBuilder() Builder {
 	return &builder{
 		schemas: make(map[string]registeredSchema, 20),
 	}
 }
 
-// Adds an entire directory (non-recursive) as schemas.
-// Every .json file in 'dir' will be opened and added to the schema map as follows:
-// 		For the main schema: prefix+fileName
-// 		For the definitions: prefix+fileName+definitionName
 func (v *builder) AddDir(prefix, dir string) error {
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		name := info.Name()
@@ -71,9 +87,6 @@ func (v *builder) AddDir(prefix, dir string) error {
 	return nil
 }
 
-// Opens the file and adds it to the schema map as follows:
-// 		For the main schema: prefix+fileName
-// 		For the definitions: prefix+fileName+definitionName
 func (v *builder) AddFile(prefix, filePath string) error {
 	if filepath.Ext(filePath) != ".json" {
 		return errors.New("failed to add file as schema - file must have a .json ext")
@@ -88,9 +101,6 @@ func (v *builder) AddFile(prefix, filePath string) error {
 	return nil
 }
 
-// Adds a schema to the schema map as 'name'
-// 		For the main schema: name
-// 		For the definitions: name+definitionName
 func (v *builder) AddSchema(name string, schema []byte) error {
 	var m map[string]interface{}
 	if err := json.Unmarshal(schema, &m); err != nil {
@@ -99,7 +109,6 @@ func (v *builder) AddSchema(name string, schema []byte) error {
 	return v.addSchema(name, m)
 }
 
-// Return a mapping of name to copies of the schemas.
 func (v *builder) GetSchemas() map[string][]byte {
 	out := make(map[string][]byte, len(v.schemas))
 	for name, s := range v.schemas {
@@ -108,7 +117,6 @@ func (v *builder) GetSchemas() map[string][]byte {
 	return out
 }
 
-// Compile all added schemas into a validator for any of the prefixs.
 func (v *builder) Compile() (Validator, error) {
 	schemas := make(map[string]*gojsonschema.Schema, len(v.schemas))
 
@@ -180,7 +188,6 @@ type validator struct {
 	schemas map[string]*gojsonschema.Schema
 }
 
-// Validate that a particular json blob conforms to the given schema.
 func (v *validator) Validate(schemaName string, instance []byte) (*gojsonschema.Result, error) {
 	if schema, ok := v.schemas[schemaName]; !ok {
 		return nil, errors.New("schema does not exist with name: " + schemaName)
