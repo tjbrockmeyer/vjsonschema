@@ -1,3 +1,8 @@
+// Package vjsonschema is a json-schema validator.
+// This package wraps gojsonschema, exposing an API which allows for many virtual schemas to be defined,
+// any of which may be validated against.
+// This package also provides relatively simple integration with a Swagger/OpenAPI specification.
+// View the full documentation on the github page: https://github.com/tjbrockmeyer/vjsonschema
 package vjsonschema
 
 import (
