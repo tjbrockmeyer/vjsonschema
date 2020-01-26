@@ -81,8 +81,7 @@ func (v *builder) AddDir(prefix, dir string) error {
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		name := info.Name()
 		if strings.HasSuffix(name, ".json") {
-			rootTypeName := name[:len(name)-5]
-			return v.AddFile(prefix+rootTypeName, path)
+			return v.AddFile(prefix, path)
 		}
 		return nil
 	})
