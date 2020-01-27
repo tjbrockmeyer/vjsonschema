@@ -50,23 +50,6 @@ When adding a schema by file name or directory name,
 the root schema will be named by the base name of the file (not including the extension).
 If there are any definitions for any schema, the definition can be accessed using the definition name.
 
-**Generally:**
-
-For the root schema: `schemaName = prefix + baseName(file)`  
-For definition schemas: `schemaName = prefix + baseName(file) + definitionName`, 
-where definitions can continue to recurse, if desired.
-
-**For example:**
-
-Given a directory `mySchemas` that contains a file `Schema.json`, 
-once loaded, the root schema of that file may be referenced using `"{Schema}"`.
-
-If `Schema.json` contains a `definitions` key, and there exists a definition called `MyDefinition`,
-then that definition in particular may be referenced using `"{SchemaMyDefinition}"`.
-
-When loading schemas using directories or files, a prefix may be provided as well.
-The prefix will come before the file name: `prefixSchema`.
-
 ### Additional Functionality
 
 Because one of the goals of this project is to allow simple integration with Swagger/OpenAPI,
