@@ -1,7 +1,7 @@
 {
   "type": "object",
   "properties": {
-    "abc": {"$ref": "{HasRefsOne}"}
+    "abc": {"$ref": "{One}"}
   },
   "definitions": {
     "One": {

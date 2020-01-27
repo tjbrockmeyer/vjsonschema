@@ -19,7 +19,7 @@ func testSchema(testName, passingName, failingName string) func(t *testing.T) {
 	return func(t *testing.T) {
 		t.Helper()
 		factory := vjsonschema.NewBuilder()
-		if err := factory.AddFile("", "./schemas/"+testName+".json"); err != nil {
+		if err := factory.AddFile("./schemas/" + testName + ".json"); err != nil {
 			t.Error(err)
 		}
 		for n := range factory.GetSchemas() {
@@ -52,15 +52,15 @@ func testSchema(testName, passingName, failingName string) func(t *testing.T) {
 }
 
 func TestValidator(t *testing.T) {
-	t.Run("simple", testSchema("Simple", "Simple", "SimpleAbc"))
-	t.Run("hasRefs", testSchema("HasRefs", "HasRefs", "HasRefsOne"))
+	t.Run("simple", testSchema("Simple", "Simple", "Abc"))
+	t.Run("hasRefs", testSchema("HasRefs", "HasRefs", "One"))
 	t.Run("circular", testSchema("Circular", "Circular", "Circular"))
 	t.Run("multiple file refs", func(t *testing.T) {
 		factory := vjsonschema.NewBuilder()
-		if err := factory.AddFile("", "./schemas/F1.json"); err != nil {
+		if err := factory.AddFile("./schemas/F1.json"); err != nil {
 			t.Error(err)
 		}
-		if err := factory.AddFile("", "./schemas/F2.json"); err != nil {
+		if err := factory.AddFile("./schemas/F2.json"); err != nil {
 			t.Error(err)
 		}
 		for n := range factory.GetSchemas() {
@@ -90,7 +90,7 @@ func TestValidator(t *testing.T) {
 	})
 	t.Run("missing refs", func(t *testing.T) {
 		fac := vjsonschema.NewBuilder()
-		if err := fac.AddFile("", "./schemas/MissingRefs.json"); err != nil {
+		if err := fac.AddFile("./schemas/MissingRefs.json"); err != nil {
 			t.Error(err)
 		}
 		_, err := fac.Compile()

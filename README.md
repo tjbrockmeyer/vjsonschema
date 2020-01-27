@@ -47,8 +47,8 @@ but these references will not be compliant with this package, and they will be l
 Seeing as references like `{MyRef}` don't seem to refer to any particular file, or any particular type necessarily,
 it is important to know how the schema names are formed.
 When adding a schema by file name or directory name, 
-the schema will be named by the base name of the file (not including the extension).
-If there are any definitions for any schema, the definition can be accessed using the schema name, plus the definition name.
+the root schema will be named by the base name of the file (not including the extension).
+If there are any definitions for any schema, the definition can be accessed using the definition name.
 
 **Generally:**
 

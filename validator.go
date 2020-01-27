@@ -36,12 +36,12 @@ type Builder interface {
 	// Every .json file in 'dir' will be opened and added to the schema map as follows:
 	// 		For the main schema: prefix+fileName
 	// 		For the definitions: prefix+fileName+definitionName
-	AddDir(prefix, dir string) error
+	AddDir(dir string) error
 
 	// Opens the file and adds it to the schema map as follows:
 	// 		For the main schema: prefix+fileName
 	// 		For the definitions: prefix+fileName+definitionName
-	AddFile(prefix, filePath string) error
+	AddFile(filePath string) error
 
 	// Adds a schema to the schema map as 'name'
 	// 		For the main schema: name
@@ -77,11 +77,11 @@ func NewBuilder() Builder {
 	}
 }
 
-func (v *builder) AddDir(prefix, dir string) error {
+func (v *builder) AddDir(dir string) error {
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		name := info.Name()
 		if strings.HasSuffix(name, ".json") {
-			return v.AddFile(prefix, path)
+			return v.AddFile(path)
 		}
 		return nil
 	})
@@ -91,12 +91,12 @@ func (v *builder) AddDir(prefix, dir string) error {
 	return nil
 }
 
-func (v *builder) AddFile(prefix, filePath string) error {
+func (v *builder) AddFile(filePath string) error {
 	if filepath.Ext(filePath) != ".json" {
 		return errors.New("failed to add file as schema - file must have a .json ext")
 	}
 	name := filepath.Base(filePath)
-	name = prefix + name[:len(name)-5]
+	name = name[:len(name)-5]
 	if contents, err := ioutil.ReadFile(filePath); err != nil {
 		return errors.WithMessage(err, "failed to read file: "+filePath)
 	} else if err = v.AddSchema(name, contents); err != nil {
@@ -165,11 +165,10 @@ func (v *builder) addSchema(name string, schema map[string]interface{}) error {
 			return errors.New("expected 'definitions' key of schema to be an object")
 		} else {
 			for defKey, def := range defsMap {
-				defName := name + defKey
 				if defMap, ok := def.(map[string]interface{}); !ok {
-					return fmt.Errorf("expected definition for '%s' to be an object at path: %s", defKey, defName)
-				} else if err := v.addSchema(defName, defMap); err != nil {
-					return errors.WithMessage(err, "failed to add schema with name: "+defName)
+					return fmt.Errorf("expected definition for '%s' to be an object", defKey)
+				} else if err := v.addSchema(defKey, defMap); err != nil {
+					return errors.WithMessage(err, "failed to add schema with name: "+defKey)
 				}
 			}
 		}
@@ -180,6 +179,9 @@ func (v *builder) addSchema(name string, schema map[string]interface{}) error {
 	refs := make(map[string]struct{}, len(items))
 	for _, i := range items {
 		refs[string(i[1])] = struct{}{}
+	}
+	if _, ok := v.schemas[name]; ok {
+		return errors.New("multiple definitions for schema with name: " + name)
 	}
 	v.schemas[name] = registeredSchema{
 		source:             b,

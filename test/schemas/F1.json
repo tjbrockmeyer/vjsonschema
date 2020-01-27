@@ -7,13 +7,13 @@
   ],
   "properties": {
     "abc": {
-      "$ref": "{F2Abc}"
+      "$ref": "{Abc}"
     },
     "123": {
-      "$ref": "{F1OneTwoThree}"
+      "$ref": "{OneTwoThree}"
     },
     "lmnop": {
-      "$ref": "{F2ElmEnnoPi}"
+      "$ref": "{ElmEnnoPi}"
     }
   },
   "definitions": {

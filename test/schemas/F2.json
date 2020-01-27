@@ -6,7 +6,7 @@
   ],
   "properties": {
     "123": {
-      "$ref": "{F1OneTwoThree}"
+      "$ref": "{OneTwoThree}"
     },
     "f1": {
       "$ref": "{F1}"
