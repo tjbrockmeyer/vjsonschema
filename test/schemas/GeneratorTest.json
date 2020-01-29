@@ -1,0 +1,73 @@
+{
+  "definitions": {
+    "B": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["a"],
+            "properties": {
+              "a": {"type": "boolean"},
+              "b": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "A": {
+      "type": "object",
+      "properties": {
+        "banana": {
+          "type": "boolean"
+        },
+        "igloo": {
+          "type": "integer"
+        },
+        "notebook": {
+          "type": "number"
+        },
+        "storage": {
+          "type": "string"
+        },
+        "apple": {
+          "type": "array",
+          "items": {
+            "$ref": "{B}"
+          }
+        },
+        "orange": {
+          "type": "object",
+          "required": [
+            "x",
+            "y",
+            "z"
+          ],
+          "properties": {
+            "x": {
+              "type": [
+                "null",
+                "integer"
+              ]
+            },
+            "y": {
+              "type": [
+                "null"
+              ]
+            },
+            "z": {
+              "type": [
+                "integer",
+                "string"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

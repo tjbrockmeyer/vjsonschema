@@ -50,7 +50,7 @@ When adding a schema by file name or directory name,
 the root schema will be named by the base name of the file (not including the extension).
 If there are any definitions for any schema, the definition can be accessed using the definition name.
 
-### Additional Functionality
+### Swagger/OpenAPI Compatibility
 
 Because one of the goals of this project is to allow simple integration with Swagger/OpenAPI,
 there are a couple of tools that are exposed for conversion needs.
@@ -68,6 +68,16 @@ With Swagger 2, references typically look like `#/definitions/Name`
 
 With OpenAPI 3, references typically look like `#/components/schemas/Name`
 
+### Model Generation
+
+There is an included package, `vjsmodels`, which can take schemas loaded by `vjsonschema` and turn them into go structs
+that are ready-to-use with json unmarshalling.
+
+Simply `go run github.com/tjbrockmeyer/vjsonschema/vjsmodels/main/main.go`, 
+passing parameters for the directories and files that will need to be turned into structs.
+
+The generated structs will be written to the output file provided, and will use the provided package name.
+
 ## Example Usage
 
 `./schemas/MySchema.json`
@@ -77,7 +87,7 @@ With OpenAPI 3, references typically look like `#/components/schemas/Name`
   "required": ["myDate", "myYear"],
   "properties": {
     "myDate": {"$ref": "{Date}"},
-    "myYear": {"$ref": "{DateYear}"}
+    "myYear": {"$ref": "{Year}"}
   }
 }
 ```
@@ -108,10 +118,10 @@ import (
 func main() {
     vb := vjsonschema.NewBuilder()
     
-    if err := vb.AddDir("", "./schemas"); err != nil {
+    if err := vb.AddDir("./schemas"); err != nil {
         panic(err)
     }
-    if err := vb.AddFile("", "./otherSchemas/Date.json"); err != nil {
+    if err := vb.AddFile("./otherSchemas/Date.json"); err != nil {
         panic(err)
     }
     if err := vb.AddSchema("MyObject", []byte(`{"type":"object","properties":{"x":{"$ref":"{MySchema}"}}}`)); err != nil {
