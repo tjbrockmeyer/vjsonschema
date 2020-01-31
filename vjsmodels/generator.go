@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"go/format"
-	"log"
 	"regexp"
 	"strings"
 )
@@ -259,7 +258,6 @@ func Generate(packageName string, schemas map[string][]byte) ([]byte, error) {
 	}
 
 	if src, err := format.Source(b.Bytes()); err != nil {
-		log.Println(string(b.Bytes()))
 		return src, errors.WithMessage(err, "failed to parse models as go source")
 	} else {
 		return src, nil
