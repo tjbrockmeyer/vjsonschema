@@ -8,7 +8,6 @@ package vjsonschema
 import (
 	"github.com/pkg/errors"
 	"github.com/xeipuuv/gojsonschema"
-	"log"
 )
 
 // An object that is capable of validating json against schemas.
@@ -25,8 +24,6 @@ func (v *validator) Validate(schemaName string, instance []byte) (*gojsonschema.
 	if schema, ok := v.schemas[schemaName]; !ok {
 		return nil, errors.New("schema does not exist with name: " + schemaName)
 	} else {
-		log.Println(schemaName)
-		log.Println(string(instance))
 		return schema.Validate(gojsonschema.NewBytesLoader(instance))
 	}
 }
