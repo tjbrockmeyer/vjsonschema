@@ -68,6 +68,36 @@
           }
         }
       }
+    },
+    "SomethingOf": {
+      "allOf": [
+        {"$ref": "{A}"},
+        {
+          "type": "object",
+          "properties": {
+            "blackHole": {"type": "boolean"}
+          }
+        }
+      ]
+    },
+    "ArrayOrObject": {
+      "type": [
+        "array",
+        "object"
+      ]
+    },
+    "ArrayOrObject2": {
+      "oneOf": [
+        {"$ref": "{A}"},
+        {"$ref": "{B}"}
+      ]
+    },
+    "ArrayOf2Things": {
+      "type": "array",
+      "items": [
+        {"$ref": "{A}"},
+        {"$ref": "{SomethingOf}"}
+      ]
     }
   }
 }

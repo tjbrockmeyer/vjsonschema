@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"go/format"
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -38,6 +39,8 @@ type jsonSchema struct {
 }
 
 type jsonSchemaBase struct {
+	Title                string                 `json:"title"`
+	Description          string                 `json:"description"`
 	Ref                  string                 `json:"$ref"`
 	Type                 interface{}            `json:"type"`
 	Items                interface{}            `json:"items"`
@@ -70,8 +73,34 @@ func (s *jsonSchema) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-func (s *jsonSchema) handleAnyOf(anyOf []*jsonSchema, schemas map[string]*jsonSchema, required bool) error {
-	s.goType = "[]interface{}"
+func (s *jsonSchema) handleOneAnyAllOf(ofSchemas []*jsonSchema, schemas map[string]*jsonSchema, required bool, keyName string) error {
+	for i, s2 := range ofSchemas {
+		if err := s2.getGoType(schemas, true); err != nil {
+			return errors.WithMessagef(err, "schema '%v'", i)
+		}
+		if s2.specialType != isObject {
+			s.goType = "interface{}"
+			return nil
+		}
+	}
+	s.specialType = isObject
+	var builder strings.Builder
+	builder.WriteString("struct{\n")
+	for i, s2 := range ofSchemas {
+		var ref string
+		if s2.Ref != "" {
+			ref, _ = isCompliantRef(s2.Ref)
+		}
+		builder.WriteString(fmt.Sprintf("// %s: schema #%v\n", keyName, i))
+		if _, ok := schemas[ref]; ok {
+			builder.WriteString("*" + toIdentifier(ref) + "\n")
+		} else {
+			t := strings.Split(s2.goType, "\n")
+			builder.WriteString(strings.Join(t[1:len(t)-1], "\n") + "\n")
+		}
+	}
+	builder.WriteString("}")
+	s.goType = builder.String()
 	return nil
 }
 
@@ -79,18 +108,22 @@ func (s *jsonSchema) handleArray(schemas map[string]*jsonSchema, required bool) 
 	s.specialType = isArray
 	if _, ok := s.Items.([]interface{}); ok {
 		b, _ := json.Marshal(s.Items)
-		var allOf []*jsonSchema
-		if err := json.Unmarshal(b, &allOf); err != nil {
+		var oneOf []*jsonSchema
+		if err := json.Unmarshal(b, &oneOf); err != nil {
 			return errors.New("keyword 'items' should be one of {schema, []schema}")
 		}
-		return s.handleAnyOf(allOf, schemas, required)
+		if err := s.handleOneAnyAllOf(oneOf, schemas, required, "oneOf"); err != nil {
+			return errors.WithMessage(err, "keyword 'items'")
+		}
+		s.goType = "[]" + s.goType
+		return nil
 	} else {
 		b, _ := json.Marshal(s.Items)
 		s2 := new(jsonSchema)
 		if err := json.Unmarshal(b, s2); err != nil {
 			return errors.New("keyword 'items' should be one of {schema, []schema}")
 		}
-		err := s2.getType(schemas, true)
+		err := s2.getGoType(schemas, true)
 		s.goType = "[]" + s2.goType
 		return errors.WithMessage(err, "keyword 'items'")
 	}
@@ -102,7 +135,7 @@ func (s *jsonSchema) handleObject(schemas map[string]*jsonSchema, required bool)
 			s.goType = "map[string]interface{}"
 			return nil
 		} else if s.AdditionalProperties.specialType != isAcceptNone {
-			if err := s.AdditionalProperties.getType(schemas, true); err != nil {
+			if err := s.AdditionalProperties.getGoType(schemas, true); err != nil {
 				return errors.WithMessage(err, "keyword 'additionalProperties'")
 			}
 			s.goType = "map[string]" + s.AdditionalProperties.goType
@@ -113,7 +146,7 @@ func (s *jsonSchema) handleObject(schemas map[string]*jsonSchema, required bool)
 
 	if s.PatternProperties != nil {
 		if len(s.PatternProperties) == 1 {
-			if err := s.getType(schemas, true); err != nil {
+			if err := s.getGoType(schemas, true); err != nil {
 				return errors.WithMessage(err, "keyword 'patternProperties'")
 			}
 			s.goType = "map[string]" + s.goType
@@ -136,9 +169,15 @@ func (s *jsonSchema) handleObject(schemas map[string]*jsonSchema, required bool)
 	if s.Properties != nil {
 		var b strings.Builder
 		b.WriteString("struct{")
-		for name, schema := range s.Properties {
+		props := make([]string, 0, len(s.Properties))
+		for name := range s.Properties {
+			props = append(props, name)
+		}
+		sort.Strings(props)
+		for _, name := range props {
+			schema := s.Properties[name]
 			_, isRequired := reqList[name]
-			if err := schema.getType(schemas, isRequired); err != nil {
+			if err := schema.getGoType(schemas, isRequired); err != nil {
 				return errors.WithMessage(err, "keyword 'properties."+name+"'")
 			}
 			var omitEmpty string
@@ -206,14 +245,14 @@ func (s *jsonSchema) handleType(kwType interface{}, schemas map[string]*jsonSche
 	}
 }
 
-func (s *jsonSchema) getType(schemas map[string]*jsonSchema, required bool) error {
+func (s *jsonSchema) getGoType(schemas map[string]*jsonSchema, required bool) error {
 	if s.Ref != "" {
-		if strings.HasPrefix(s.Ref, "{") && strings.HasSuffix(s.Ref, "}") {
-			s2Name := s.Ref[1 : len(s.Ref)-1]
+		if s2Name, ok := isCompliantRef(s.Ref); ok {
 			s2 := schemas[s2Name]
-			if err := s2.getType(schemas, required); err != nil {
+			if err := s2.getGoType(schemas, required); err != nil {
 				return errors.WithMessage(err, "keyword '$ref'")
 			}
+			s.specialType = s2.specialType
 			if s2.canBeReferenced() {
 				s.goType = toIdentifier(s2Name)
 				return nil
@@ -224,13 +263,20 @@ func (s *jsonSchema) getType(schemas map[string]*jsonSchema, required bool) erro
 		s.goType = "interface{}"
 		return nil
 	}
-	if s.Type != nil {
-		if err := s.handleType(s.Type, schemas, required); err != nil {
-			return errors.WithMessage(err, "keyword 'type'")
-		}
-	} else {
-		s.goType = "interface{}"
+
+	if s.AnyOf != nil {
+		return errors.WithMessage(s.handleOneAnyAllOf(s.AnyOf, schemas, required, "anyOf"), "keyword 'anyOf'")
 	}
+	if s.OneOf != nil {
+		return errors.WithMessage(s.handleOneAnyAllOf(s.OneOf, schemas, required, "oneOf"), "keyword 'oneOf'")
+	}
+	if s.AllOf != nil {
+		return errors.WithMessage(s.handleOneAnyAllOf(s.AllOf, schemas, required, "allOf"), "keyword 'allOf'")
+	}
+	if s.Type != nil {
+		return errors.WithMessage(s.handleType(s.Type, schemas, required), "keyword 'type'")
+	}
+	s.goType = "interface{}"
 	return nil
 }
 
@@ -248,13 +294,26 @@ func Generate(packageName string, schemas map[string][]byte) ([]byte, error) {
 
 	b.WriteString("package " + packageName + "\n")
 
-	for name, s := range jsonSchemas {
-		if err := s.getType(jsonSchemas, true); err != nil {
+	names := make([]string, 0, len(jsonSchemas))
+	for name := range jsonSchemas {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		s := jsonSchemas[name]
+		if err := s.getGoType(jsonSchemas, true); err != nil {
 			return nil, errors.WithMessage(err, "failed to get type of schema "+name)
 		}
-		if s.canBeReferenced() {
-			b.WriteString(fmt.Sprintf("type %s %s\n", name, s.goType))
+		if s.Title != "" {
+			b.WriteString("// " + s.Title + "\n")
 		}
+		if s.Description != "" {
+			b.WriteString("// " + s.Description + "\n")
+		}
+		if !s.canBeReferenced() {
+			b.WriteString("// ")
+		}
+		b.WriteString(fmt.Sprintf("type %s %s\n\n", name, s.goType))
 	}
 
 	if src, err := format.Source(b.Bytes()); err != nil {
@@ -276,4 +335,11 @@ func toIdentifier(s string) string {
 		return "X" + s
 	}
 	return strings.ToUpper(s[:1]) + s[1:]
+}
+
+func isCompliantRef(ref string) (r string, ok bool) {
+	if strings.HasPrefix(ref, "{") && strings.HasSuffix(ref, "}") {
+		return ref[1 : len(ref)-1], true
+	}
+	return "", false
 }
