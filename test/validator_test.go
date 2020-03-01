@@ -1,4 +1,4 @@
-package vjsonschema_test
+package test
 
 import (
 	"github.com/tjbrockmeyer/vjsonschema"

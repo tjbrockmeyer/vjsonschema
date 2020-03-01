@@ -1,4 +1,4 @@
-package vjsonschema
+package test
 
 import "testing"
 
