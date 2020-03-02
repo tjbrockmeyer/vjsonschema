@@ -248,7 +248,10 @@ func (s *jsonSchema) handleType(kwType interface{}, schemas map[string]*jsonSche
 func (s *jsonSchema) getGoType(schemas map[string]*jsonSchema, required bool) error {
 	if s.Ref != "" {
 		if s2Name, ok := isCompliantRef(s.Ref); ok {
-			s2 := schemas[s2Name]
+			s2, ok := schemas[s2Name]
+			if !ok {
+				return fmt.Errorf("schema \"%s\" is not defined", s2Name)
+			}
 			if err := s2.getGoType(schemas, required); err != nil {
 				return errors.WithMessage(err, "keyword '$ref'")
 			}
